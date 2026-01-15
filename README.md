@@ -54,6 +54,21 @@ npm run build
 npm run start:prod
 ```
 
+**Docker**:
+```bash
+# Build the image
+docker build -t lm-studio-mcp-server .
+
+# Run (connects to LM Studio on host machine)
+docker run -i --rm lm-studio-mcp-server
+
+# Run with custom LM Studio host
+docker run -i --rm \
+  -e LMSTUDIO_HOST=192.168.1.100 \
+  -e LMSTUDIO_PORT=1234 \
+  lm-studio-mcp-server
+```
+
 ### MCP Client Configuration
 
 #### Claude Desktop
@@ -101,6 +116,22 @@ Add to your `claude_desktop_config.json`:
       "args": ["/path/to/lm-studio-mcp-server/dist/index.js"],
       "env": {
         "LMSTUDIO_HOST": "127.0.0.1",
+        "LMSTUDIO_PORT": "1234"
+      }
+    }
+  }
+}
+```
+
+**Using Docker:**
+```json
+{
+  "mcpServers": {
+    "lmstudio": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "lm-studio-mcp-server"],
+      "env": {
+        "LMSTUDIO_HOST": "host.docker.internal",
         "LMSTUDIO_PORT": "1234"
       }
     }
