@@ -23,7 +23,7 @@
     "models",
     "server"
   ],
-  "author": "",
+  "author": "Sean Porter",
   "license": "ISC",
   "type": "commonjs",
   "engines": {
@@ -31,7 +31,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "dependencies": {
     "@lmstudio/sdk": "^1.5.0",
