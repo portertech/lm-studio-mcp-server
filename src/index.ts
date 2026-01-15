@@ -13,12 +13,14 @@ import {
   act,
   getSessionTool,
   deleteSessionTool,
+  registerTools,
   loadModelInputSchema,
   unloadModelInputSchema,
   getModelInfoInputSchema,
   actInputSchema,
   getSessionInputSchema,
   deleteSessionInputSchema,
+  registerToolsInputSchema,
 } from "./tools/index.js";
 import { ToolResult, errorResult, ErrorCode } from "./types.js";
 
@@ -130,6 +132,16 @@ async function main(): Promise<void> {
     deleteSessionInputSchema.shape,
     async (params) => {
       return safeToolHandler(() => validateAndCall(deleteSessionInputSchema, params, deleteSessionTool));
+    }
+  );
+
+  // Register register_tools tool - cache tool schemas
+  server.tool(
+    "lmstudio_register_tools",
+    "Register a set of tools for reuse across sessions. Returns a toolSetId that can be passed to act() instead of the full tools array.",
+    registerToolsInputSchema.shape,
+    async (params) => {
+      return safeToolHandler(() => validateAndCall(registerToolsInputSchema, params, registerTools));
     }
   );
 

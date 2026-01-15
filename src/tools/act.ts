@@ -6,6 +6,7 @@ import {
   getSession,
   appendMessage,
   deleteSession,
+  getToolSet,
   ToolSchema,
 } from "../sessions.js";
 
@@ -31,6 +32,7 @@ export const inputSchema = z.object({
   identifier: z.string().min(1).optional().describe("The loaded model identifier to use"),
   task: z.string().min(1).optional().describe("The task or prompt for the model"),
   tools: z.array(toolSchemaZ).optional().describe("Tool schemas available for the model to call"),
+  toolSetId: z.string().optional().describe("Reference a cached tool set instead of passing tools array"),
 
   // For continuing sessions
   toolResults: z.array(toolResultZ).optional().describe("Results from previously requested tool calls"),
@@ -179,7 +181,22 @@ export async function act(input: ActInput): Promise<ToolResult<ActData>> {
       );
     }
 
-    const tools: ToolSchema[] = input.tools || [];
+    // Resolve tools from toolSetId or direct tools array
+    let tools: ToolSchema[] = [];
+    if (input.toolSetId) {
+      const toolSet = getToolSet(input.toolSetId);
+      if (!toolSet) {
+        return errorResult(
+          "Tool set not found or expired",
+          ErrorCode.INVALID_INPUT,
+          `Tool set '${input.toolSetId}' does not exist or has expired`
+        );
+      }
+      tools = toolSet.tools;
+    } else if (input.tools) {
+      tools = input.tools;
+    }
+
     const systemPrompt = tools.length > 0 ? buildToolSystemPrompt(tools) : undefined;
 
     session = createSession(input.identifier, tools, systemPrompt);

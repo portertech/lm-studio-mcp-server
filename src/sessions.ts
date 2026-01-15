@@ -45,6 +45,19 @@ export interface SessionInfo {
 // Session store
 const sessions = new Map<string, Session>();
 
+// Tool set store (cached tool schemas)
+const toolSets = new Map<string, ToolSet>();
+
+/**
+ * Cached tool set for reuse across sessions.
+ */
+export interface ToolSet {
+  id: string;
+  tools: ToolSchema[];
+  createdAt: number;
+  lastAccessedAt: number;
+}
+
 // Session TTL: 30 minutes
 const SESSION_TTL_MS = 30 * 60 * 1000;
 
@@ -172,7 +185,7 @@ export function getSessionCount(): number {
 }
 
 /**
- * Clean up expired sessions.
+ * Clean up expired sessions and tool sets.
  */
 export function cleanupExpiredSessions(): number {
   const now = Date.now();
@@ -181,6 +194,13 @@ export function cleanupExpiredSessions(): number {
   for (const [id, session] of sessions.entries()) {
     if (now - session.lastAccessedAt > SESSION_TTL_MS) {
       sessions.delete(id);
+      cleaned++;
+    }
+  }
+
+  for (const [id, toolSet] of toolSets.entries()) {
+    if (now - toolSet.lastAccessedAt > SESSION_TTL_MS) {
+      toolSets.delete(id);
       cleaned++;
     }
   }
@@ -210,4 +230,73 @@ export function clearAllSessions(): void {
  */
 export function getSessionTTL(): number {
   return SESSION_TTL_MS;
+}
+
+// ============ Tool Set Management ============
+
+/**
+ * Register a tool set for reuse across sessions.
+ * Returns the tool set ID.
+ */
+export function registerToolSet(tools: ToolSchema[], id?: string): ToolSet {
+  const toolSetId = id || randomUUID();
+  const now = Date.now();
+
+  const toolSet: ToolSet = {
+    id: toolSetId,
+    tools,
+    createdAt: now,
+    lastAccessedAt: now,
+  };
+
+  toolSets.set(toolSetId, toolSet);
+  return toolSet;
+}
+
+/**
+ * Get a tool set by ID.
+ * Returns undefined if not found or expired.
+ */
+export function getToolSet(id: string): ToolSet | undefined {
+  const toolSet = toolSets.get(id);
+  if (!toolSet) {
+    return undefined;
+  }
+
+  // Check if tool set has expired (same TTL as sessions)
+  if (Date.now() - toolSet.lastAccessedAt > SESSION_TTL_MS) {
+    toolSets.delete(id);
+    return undefined;
+  }
+
+  toolSet.lastAccessedAt = Date.now();
+  return toolSet;
+}
+
+/**
+ * Delete a tool set.
+ */
+export function deleteToolSet(id: string): boolean {
+  return toolSets.delete(id);
+}
+
+/**
+ * List all tool set IDs.
+ */
+export function listToolSets(): string[] {
+  return Array.from(toolSets.keys());
+}
+
+/**
+ * Get tool set count.
+ */
+export function getToolSetCount(): number {
+  return toolSets.size;
+}
+
+/**
+ * Clear all tool sets (for testing).
+ */
+export function clearAllToolSets(): void {
+  toolSets.clear();
 }

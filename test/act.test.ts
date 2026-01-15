@@ -8,16 +8,18 @@ vi.mock("../src/client.js", () => ({
 import { getClient } from "../src/client.js";
 import { act } from "../src/tools/act.js";
 import { ErrorCode } from "../src/types.js";
-import { clearAllSessions } from "../src/sessions.js";
+import { clearAllSessions, clearAllToolSets, registerToolSet } from "../src/sessions.js";
 
 describe("act tool", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearAllSessions();
+    clearAllToolSets();
   });
 
   afterEach(() => {
     clearAllSessions();
+    clearAllToolSets();
   });
 
   describe("new session", () => {
@@ -101,6 +103,51 @@ describe("act tool", () => {
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe(ErrorCode.INVALID_INPUT);
       expect(result.message.toLowerCase()).toContain("task");
+    });
+
+    it("uses cached tool set when toolSetId is provided", async () => {
+      // Register a tool set first
+      const toolSet = registerToolSet([
+        { name: "cached_tool", description: "A cached tool" },
+      ]);
+
+      const mockHandle = {
+        getModelInfo: vi.fn().mockResolvedValue({
+          identifier: "test-model",
+          modelKey: "llama-3.2-3b",
+        }),
+        respond: vi.fn().mockResolvedValue({
+          content: '{"tool_calls": [{"name": "cached_tool", "arguments": {}}]}',
+        }),
+      };
+
+      const mockClient = {
+        llm: {
+          createDynamicHandle: vi.fn().mockReturnValue(mockHandle),
+        },
+      };
+      vi.mocked(getClient).mockReturnValue(mockClient as never);
+
+      const result = await act({
+        identifier: "test-model",
+        task: "Use the cached tool",
+        toolSetId: toolSet.id,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data?.toolCalls?.[0].name).toBe("cached_tool");
+    });
+
+    it("returns error when toolSetId not found", async () => {
+      const result = await act({
+        identifier: "test-model",
+        task: "Do something",
+        toolSetId: "non-existent-tool-set",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe(ErrorCode.INVALID_INPUT);
+      expect(result.message).toContain("Tool set not found");
     });
   });
 

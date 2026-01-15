@@ -8,6 +8,7 @@ export { healthCheck } from "./health-check.js";
 export { act } from "./act.js";
 export { getSessionTool } from "./get-session.js";
 export { deleteSessionTool } from "./delete-session.js";
+export { registerTools } from "./register-tools.js";
 
 // Export input schemas
 export { inputSchema as listModelsInputSchema } from "./list-models.js";
@@ -19,6 +20,7 @@ export { inputSchema as healthCheckInputSchema } from "./health-check.js";
 export { inputSchema as actInputSchema } from "./act.js";
 export { inputSchema as getSessionInputSchema } from "./get-session.js";
 export { inputSchema as deleteSessionInputSchema } from "./delete-session.js";
+export { inputSchema as registerToolsInputSchema } from "./register-tools.js";
 
 // Export types
 export type { DownloadedModelInfo } from "./list-models.js";
@@ -30,3 +32,4 @@ export type { HealthCheckInput, HealthCheckData } from "./health-check.js";
 export type { ActInput, ActData, ToolCallRequest } from "./act.js";
 export type { GetSessionInput, GetSessionData } from "./get-session.js";
 export type { DeleteSessionInput, DeleteSessionData } from "./delete-session.js";
+export type { RegisterToolsInput, RegisterToolsData } from "./register-tools.js";

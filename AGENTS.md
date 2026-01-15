@@ -37,7 +37,8 @@ src/
     ├── get-model-info.ts
     ├── act.ts            # Agentic task execution with tool use
     ├── get-session.ts    # Read session response/history
-    └── delete-session.ts # Explicit session cleanup
+    ├── delete-session.ts # Explicit session cleanup
+    └── register-tools.ts # Cache tool schemas for reuse
 
 test/
 ├── schemas.test.ts       # Input schema validation tests
