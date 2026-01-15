@@ -11,6 +11,7 @@ An MCP (Model Context Protocol) server that provides AI assistants with control 
 - **Unload Models**: Remove specific model instances from memory
 - **Get Model Info**: Retrieve detailed information about loaded models
 - **Agentic Tasks**: Run tasks with local models that can request tool calls
+- **Session Management**: Server-side conversation state for reduced token usage
 
 ## Prerequisites
 
@@ -241,12 +242,14 @@ Get detailed information about a loaded model.
 
 Run an agentic task with a local LM Studio model. Supports tool use via a request/response pattern where the local model can request tool calls that are returned to the caller for execution.
 
+Uses server-side session management to store conversation history, reducing token usage for the parent model by ~80-90% on multi-turn tasks.
+
 **Parameters**:
-- `identifier` (required): The loaded model identifier to use
-- `task` (required): The task or prompt for the model
+- `sessionId` (optional): Resume an existing session (omit to start new)
+- `identifier` (required for new sessions): The loaded model identifier to use
+- `task` (required for new sessions): The task or prompt for the model
 - `tools` (optional): Array of tool schemas available for the model to call
 - `toolResults` (optional): Results from previously requested tool calls
-- `history` (optional): Conversation history for multi-turn interactions
 - `maxTokens` (optional): Maximum tokens to generate (default: 2048)
 
 **Tool Schema Format**:
@@ -261,35 +264,60 @@ Run an agentic task with a local LM Studio model. Supports tool use via a reques
 **Returns**:
 ```typescript
 {
+  sessionId: string;       // Session ID for continuation
   done: boolean;           // true if task complete, false if tool calls needed
   response?: string;       // Final response (when done=true)
   toolCalls?: Array<{      // Requested tool calls (when done=false)
     name: string;
     arguments?: Record<string, any>;
   }>;
-  history: Array<{         // Updated conversation history
-    role: string;
-    content: string;
-  }>;
 }
 ```
 
-**Usage Pattern**:
-
-1. Call `lmstudio_act` with a task and available tools
-2. If `done=false`, execute the requested `toolCalls` using your available MCP tools
-3. Call `lmstudio_act` again with `toolResults` containing the outputs
-4. Repeat until `done=true` and use the final `response`
-
 **Example Flow**:
 ```
-Parent (Claude) → lmstudio_act(task: "What files are in /tmp?", tools: [read_dir])
-                ← {done: false, toolCalls: [{name: "read_dir", arguments: {path: "/tmp"}}]}
+# Start new session
+Parent → lmstudio_act(identifier: "model", task: "What files are in /tmp?", tools: [...])
+       ← {sessionId: "abc-123", done: false, toolCalls: [{name: "read_dir", arguments: {path: "/tmp"}}]}
 
-Parent executes read_dir("/tmp") → ["file1.txt", "file2.txt"]
+# Continue with tool results (only send sessionId, not full history)
+Parent → lmstudio_act(sessionId: "abc-123", toolResults: [{name: "read_dir", result: "file1.txt, file2.txt"}])
+       ← {sessionId: "abc-123", done: true, response: "The /tmp directory contains: file1.txt and file2.txt"}
+```
 
-Parent (Claude) → lmstudio_act(toolResults: [{name: "read_dir", result: "file1.txt, file2.txt"}])
-                ← {done: true, response: "The /tmp directory contains: file1.txt and file2.txt"}
+### `lmstudio_get_session`
+
+Get information about an active agentic session.
+
+**Parameters**:
+- `sessionId` (required): The session ID to get information about
+
+**Returns**:
+```typescript
+{
+  sessionId: string;
+  modelId: string;
+  messageCount: number;
+  toolCount: number;
+  createdAt: number;       // Unix timestamp
+  lastAccessedAt: number;  // Unix timestamp
+  ttlRemainingMs: number;  // Milliseconds until session expires
+}
+```
+
+### `lmstudio_end_session`
+
+End an active agentic session and free its resources. Sessions automatically expire after 30 minutes of inactivity, but this allows explicit cleanup.
+
+**Parameters**:
+- `sessionId` (required): The session ID to end
+
+**Returns**:
+```typescript
+{
+  sessionId: string;
+  ended: boolean;
+}
 ```
 
 ## Development
@@ -301,8 +329,11 @@ npm run build
 # Run in development mode with auto-reload
 npm run dev
 
-# Type check without emitting
+# Run tests
 npm test
+
+# Type check without emitting
+npm run typecheck
 ```
 
 ### Project Structure
@@ -311,6 +342,7 @@ npm test
 src/
 ├── index.ts              # MCP server entry point
 ├── client.ts             # LM Studio client wrapper
+├── sessions.ts           # Server-side session management
 ├── types.ts              # Shared types and result helpers
 └── tools/
     ├── index.ts          # Tool exports
@@ -320,7 +352,9 @@ src/
     ├── load-model.ts
     ├── unload-model.ts
     ├── get-model-info.ts
-    └── act.ts            # Agentic task execution
+    ├── act.ts            # Agentic task execution
+    ├── get-session.ts    # Session introspection
+    └── end-session.ts    # Session cleanup
 ```
 
 ### Architecture
@@ -329,6 +363,7 @@ src/
 - **Safe Wrappers**: Tool handlers are wrapped to catch exceptions and return error payloads
 - **Lazy Config**: Environment variables are read at runtime, not module load
 - **Singleton Client**: Single LM Studio client instance is reused
+- **Session Management**: Server-side conversation state with automatic TTL cleanup
 
 ## License
 

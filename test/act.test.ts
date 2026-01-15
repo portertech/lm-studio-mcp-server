@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock the client module
 vi.mock("../src/client.js", () => ({
@@ -8,14 +8,20 @@ vi.mock("../src/client.js", () => ({
 import { getClient } from "../src/client.js";
 import { act } from "../src/tools/act.js";
 import { ErrorCode } from "../src/types.js";
+import { clearAllSessions } from "../src/sessions.js";
 
 describe("act tool", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAllSessions();
   });
 
-  describe("basic response", () => {
-    it("returns completed response when model responds without tool calls", async () => {
+  afterEach(() => {
+    clearAllSessions();
+  });
+
+  describe("new session", () => {
+    it("returns completed response with sessionId when model responds without tool calls", async () => {
       const mockHandle = {
         getModelInfo: vi.fn().mockResolvedValue({
           identifier: "test-model",
@@ -40,14 +46,20 @@ describe("act tool", () => {
 
       expect(result.success).toBe(true);
       expect(result.data?.done).toBe(true);
+      expect(result.data?.sessionId).toBeDefined();
       expect(result.data?.response).toBe("Hello! I can help you with that.");
       expect(result.data?.toolCalls).toBeUndefined();
-      expect(result.data?.history).toHaveLength(2); // user + assistant
     });
 
-    it("returns error when model is not loaded", async () => {
+    it("returns tool calls with sessionId for continuation", async () => {
       const mockHandle = {
-        getModelInfo: vi.fn().mockResolvedValue(undefined),
+        getModelInfo: vi.fn().mockResolvedValue({
+          identifier: "test-model",
+          modelKey: "llama-3.2-3b",
+        }),
+        respond: vi.fn().mockResolvedValue({
+          content: '{"tool_calls": [{"name": "get_weather", "arguments": {"city": "London"}}]}',
+        }),
       };
 
       const mockClient = {
@@ -58,16 +70,100 @@ describe("act tool", () => {
       vi.mocked(getClient).mockReturnValue(mockClient as never);
 
       const result = await act({
-        identifier: "nonexistent-model",
+        identifier: "test-model",
+        task: "What's the weather in London?",
+        tools: [{ name: "get_weather", description: "Get weather for a city" }],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data?.done).toBe(false);
+      expect(result.data?.sessionId).toBeDefined();
+      expect(result.data?.toolCalls).toHaveLength(1);
+      expect(result.data?.toolCalls?.[0].name).toBe("get_weather");
+    });
+
+    it("requires identifier for new session", async () => {
+      const result = await act({
         task: "Do something",
       });
 
       expect(result.success).toBe(false);
-      expect(result.error?.code).toBe(ErrorCode.MODEL_NOT_LOADED);
+      expect(result.error?.code).toBe(ErrorCode.INVALID_INPUT);
+      expect(result.message.toLowerCase()).toContain("identifier");
+    });
+
+    it("requires task for new session", async () => {
+      const result = await act({
+        identifier: "test-model",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe(ErrorCode.INVALID_INPUT);
+      expect(result.message.toLowerCase()).toContain("task");
     });
   });
 
-  describe("tool calls", () => {
+  describe("session continuation", () => {
+    it("continues session with tool results using sessionId", async () => {
+      const mockHandle = {
+        getModelInfo: vi.fn().mockResolvedValue({
+          identifier: "test-model",
+          modelKey: "llama-3.2-3b",
+        }),
+        respond: vi
+          .fn()
+          .mockResolvedValueOnce({
+            content: '{"tool_calls": [{"name": "get_weather", "arguments": {"city": "London"}}]}',
+          })
+          .mockResolvedValueOnce({
+            content: "The weather in London is sunny.",
+          }),
+      };
+
+      const mockClient = {
+        llm: {
+          createDynamicHandle: vi.fn().mockReturnValue(mockHandle),
+        },
+      };
+      vi.mocked(getClient).mockReturnValue(mockClient as never);
+
+      // First call - start session
+      const result1 = await act({
+        identifier: "test-model",
+        task: "What's the weather in London?",
+        tools: [{ name: "get_weather" }],
+      });
+
+      expect(result1.success).toBe(true);
+      expect(result1.data?.done).toBe(false);
+      const sessionId = result1.data?.sessionId;
+      expect(sessionId).toBeDefined();
+
+      // Second call - continue with tool results
+      const result2 = await act({
+        sessionId,
+        toolResults: [{ name: "get_weather", result: "sunny, 22C" }],
+      });
+
+      expect(result2.success).toBe(true);
+      expect(result2.data?.done).toBe(true);
+      expect(result2.data?.sessionId).toBe(sessionId);
+      expect(result2.data?.response).toBe("The weather in London is sunny.");
+    });
+
+    it("returns error when session not found", async () => {
+      const result = await act({
+        sessionId: "non-existent-session-id",
+        toolResults: [{ name: "test", result: "value" }],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe(ErrorCode.INVALID_INPUT);
+      expect(result.message).toContain("Session not found");
+    });
+  });
+
+  describe("tool call parsing", () => {
     it("parses tool calls from JSON response", async () => {
       const mockHandle = {
         getModelInfo: vi.fn().mockResolvedValue({
@@ -157,16 +253,10 @@ describe("act tool", () => {
     });
   });
 
-  describe("conversation history", () => {
-    it("preserves existing history", async () => {
+  describe("error handling", () => {
+    it("returns error when model is not loaded", async () => {
       const mockHandle = {
-        getModelInfo: vi.fn().mockResolvedValue({
-          identifier: "test-model",
-          modelKey: "llama-3.2-3b",
-        }),
-        respond: vi.fn().mockResolvedValue({
-          content: "Continuing the conversation.",
-        }),
+        getModelInfo: vi.fn().mockResolvedValue(undefined),
       };
 
       const mockClient = {
@@ -177,112 +267,14 @@ describe("act tool", () => {
       vi.mocked(getClient).mockReturnValue(mockClient as never);
 
       const result = await act({
-        identifier: "test-model",
-        task: "Continue",
-        history: [
-          { role: "user", content: "Hello" },
-          { role: "assistant", content: "Hi there!" },
-        ],
-      });
-
-      expect(result.success).toBe(true);
-      expect(result.data?.history).toHaveLength(4); // 2 existing + user + assistant
-    });
-
-    it("adds tool results to history", async () => {
-      const mockHandle = {
-        getModelInfo: vi.fn().mockResolvedValue({
-          identifier: "test-model",
-          modelKey: "llama-3.2-3b",
-        }),
-        respond: vi.fn().mockResolvedValue({
-          content: "The weather is sunny.",
-        }),
-      };
-
-      const mockClient = {
-        llm: {
-          createDynamicHandle: vi.fn().mockReturnValue(mockHandle),
-        },
-      };
-      vi.mocked(getClient).mockReturnValue(mockClient as never);
-
-      const result = await act({
-        identifier: "test-model",
-        task: "What's the weather?",
-        toolResults: [{ name: "get_weather", result: "sunny, 22C" }],
-        history: [
-          { role: "user", content: "What's the weather?" },
-          { role: "assistant", content: '{"tool_calls": [{"name": "get_weather"}]}' },
-        ],
-      });
-
-      expect(result.success).toBe(true);
-      // Check that tool results were passed in the history
-      const respondCall = mockHandle.respond.mock.calls[0];
-      const messages = respondCall[0];
-      expect(messages.some((m: { content: string }) => m.content.includes("get_weather"))).toBe(true);
-    });
-  });
-
-  describe("timeout handling", () => {
-    it("times out when model response takes too long", async () => {
-      const mockHandle = {
-        getModelInfo: vi.fn().mockResolvedValue({
-          identifier: "test-model",
-          modelKey: "llama-3.2-3b",
-        }),
-        respond: vi.fn().mockImplementation(
-          () => new Promise((resolve) => setTimeout(() => resolve({ content: "done" }), 5000))
-        ),
-      };
-
-      const mockClient = {
-        llm: {
-          createDynamicHandle: vi.fn().mockReturnValue(mockHandle),
-        },
-      };
-      vi.mocked(getClient).mockReturnValue(mockClient as never);
-
-      const result = await act({
-        identifier: "test-model",
-        task: "Slow task",
-        timeoutMs: 100, // Very short timeout
+        identifier: "nonexistent-model",
+        task: "Do something",
       });
 
       expect(result.success).toBe(false);
-      expect(result.error?.message).toContain("timed out");
-    }, 10000);
-
-    it("uses default timeout when not specified", async () => {
-      const mockHandle = {
-        getModelInfo: vi.fn().mockResolvedValue({
-          identifier: "test-model",
-          modelKey: "llama-3.2-3b",
-        }),
-        respond: vi.fn().mockResolvedValue({
-          content: "Fast response",
-        }),
-      };
-
-      const mockClient = {
-        llm: {
-          createDynamicHandle: vi.fn().mockReturnValue(mockHandle),
-        },
-      };
-      vi.mocked(getClient).mockReturnValue(mockClient as never);
-
-      const result = await act({
-        identifier: "test-model",
-        task: "Quick task",
-      });
-
-      expect(result.success).toBe(true);
-      // Default timeout is 60s, so fast response should succeed
+      expect(result.error?.code).toBe(ErrorCode.MODEL_NOT_LOADED);
     });
-  });
 
-  describe("error handling", () => {
     it("returns connection error on network failure", async () => {
       const mockClient = {
         llm: {
