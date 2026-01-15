@@ -9,9 +9,11 @@ import {
   unloadModel,
   getModelInfo,
   healthCheck,
+  act,
   loadModelInputSchema,
   unloadModelInputSchema,
   getModelInfoInputSchema,
+  actInputSchema,
 } from "./tools/index.js";
 import { ToolResult, errorResult, ErrorCode } from "./types.js";
 
@@ -78,6 +80,16 @@ async function main(): Promise<void> {
   server.tool("lmstudio_get_model_info", "Get detailed information about a specific loaded model in LM Studio", getModelInfoInputSchema.shape, async (params) => {
     return safeToolHandler(() => getModelInfo(params as Parameters<typeof getModelInfo>[0]));
   });
+
+  // Register act tool - agentic task execution with tool use
+  server.tool(
+    "lmstudio_act",
+    "Run an agentic task with a local LM Studio model. Supports tool use via request/response pattern - model can request tool calls which are returned to caller for execution.",
+    actInputSchema.shape,
+    async (params) => {
+      return safeToolHandler(() => act(params as Parameters<typeof act>[0]));
+    }
+  );
 
   // Connect to stdio transport
   const transport = new StdioServerTransport();

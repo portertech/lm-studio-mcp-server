@@ -10,6 +10,7 @@ An MCP (Model Context Protocol) server that provides AI assistants with control 
 - **Load Models**: Load models into memory with configurable parameters
 - **Unload Models**: Remove specific model instances from memory
 - **Get Model Info**: Retrieve detailed information about loaded models
+- **Agentic Tasks**: Run tasks with local models that can request tool calls
 
 ## Prerequisites
 
@@ -236,6 +237,61 @@ Get detailed information about a loaded model.
 
 **Returns**: Model details including identifier, modelKey, path, displayName, sizeBytes, contextLength
 
+### `lmstudio_act`
+
+Run an agentic task with a local LM Studio model. Supports tool use via a request/response pattern where the local model can request tool calls that are returned to the caller for execution.
+
+**Parameters**:
+- `identifier` (required): The loaded model identifier to use
+- `task` (required): The task or prompt for the model
+- `tools` (optional): Array of tool schemas available for the model to call
+- `toolResults` (optional): Results from previously requested tool calls
+- `history` (optional): Conversation history for multi-turn interactions
+- `maxTokens` (optional): Maximum tokens to generate (default: 2048)
+
+**Tool Schema Format**:
+```typescript
+{
+  name: string;
+  description?: string;
+  parameters?: Record<string, any>;
+}
+```
+
+**Returns**:
+```typescript
+{
+  done: boolean;           // true if task complete, false if tool calls needed
+  response?: string;       // Final response (when done=true)
+  toolCalls?: Array<{      // Requested tool calls (when done=false)
+    name: string;
+    arguments?: Record<string, any>;
+  }>;
+  history: Array<{         // Updated conversation history
+    role: string;
+    content: string;
+  }>;
+}
+```
+
+**Usage Pattern**:
+
+1. Call `lmstudio_act` with a task and available tools
+2. If `done=false`, execute the requested `toolCalls` using your available MCP tools
+3. Call `lmstudio_act` again with `toolResults` containing the outputs
+4. Repeat until `done=true` and use the final `response`
+
+**Example Flow**:
+```
+Parent (Claude) → lmstudio_act(task: "What files are in /tmp?", tools: [read_dir])
+                ← {done: false, toolCalls: [{name: "read_dir", arguments: {path: "/tmp"}}]}
+
+Parent executes read_dir("/tmp") → ["file1.txt", "file2.txt"]
+
+Parent (Claude) → lmstudio_act(toolResults: [{name: "read_dir", result: "file1.txt, file2.txt"}])
+                ← {done: true, response: "The /tmp directory contains: file1.txt and file2.txt"}
+```
+
 ## Development
 
 ```bash
@@ -263,7 +319,8 @@ src/
     ├── list-loaded-models.ts
     ├── load-model.ts
     ├── unload-model.ts
-    └── get-model-info.ts
+    ├── get-model-info.ts
+    └── act.ts            # Agentic task execution
 ```
 
 ### Architecture
