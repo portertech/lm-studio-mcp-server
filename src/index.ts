@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
 
 // Import tool handlers and schemas
 import {
@@ -22,6 +23,23 @@ const SERVER_CONFIG = {
   name: "lmstudio",
   version: "1.0.0",
 };
+
+/**
+ * Validate input params against a Zod schema and call the handler if valid.
+ * Returns an INVALID_INPUT error if validation fails.
+ */
+async function validateAndCall<T, R>(
+  schema: z.ZodType<T>,
+  params: unknown,
+  handler: (validatedParams: T) => Promise<ToolResult<R>>
+): Promise<ToolResult<R>> {
+  const result = schema.safeParse(params);
+  if (!result.success) {
+    const issues = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+    return errorResult("Invalid input parameters", ErrorCode.INVALID_INPUT, issues) as ToolResult<R>;
+  }
+  return handler(result.data);
+}
 
 /**
  * Safe wrapper that catches any thrown errors and returns a consistent error payload.
@@ -68,17 +86,17 @@ async function main(): Promise<void> {
 
   // Register load_model tool - use schema from tool file
   server.tool("lmstudio_load_model", "Load a model into memory in LM Studio", loadModelInputSchema.shape, async (params) => {
-    return safeToolHandler(() => loadModel(params as Parameters<typeof loadModel>[0]));
+    return safeToolHandler(() => validateAndCall(loadModelInputSchema, params, loadModel));
   });
 
   // Register unload_model tool - use schema from tool file
   server.tool("lmstudio_unload_model", "Unload a model from memory in LM Studio", unloadModelInputSchema.shape, async (params) => {
-    return safeToolHandler(() => unloadModel(params as Parameters<typeof unloadModel>[0]));
+    return safeToolHandler(() => validateAndCall(unloadModelInputSchema, params, unloadModel));
   });
 
   // Register get_model_info tool - use schema from tool file
   server.tool("lmstudio_get_model_info", "Get detailed information about a specific loaded model in LM Studio", getModelInfoInputSchema.shape, async (params) => {
-    return safeToolHandler(() => getModelInfo(params as Parameters<typeof getModelInfo>[0]));
+    return safeToolHandler(() => validateAndCall(getModelInfoInputSchema, params, getModelInfo));
   });
 
   // Register act tool - agentic task execution with tool use
@@ -87,7 +105,7 @@ async function main(): Promise<void> {
     "Run an agentic task with a local LM Studio model. Supports tool use via request/response pattern - model can request tool calls which are returned to caller for execution.",
     actInputSchema.shape,
     async (params) => {
-      return safeToolHandler(() => act(params as Parameters<typeof act>[0]));
+      return safeToolHandler(() => validateAndCall(actInputSchema, params, act));
     }
   );
 

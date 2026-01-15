@@ -1,13 +1,38 @@
 import { LMStudioClient } from "@lmstudio/sdk";
 
 /**
+ * Validate that a URL is properly formatted for LM Studio connection.
+ * Only ws:// and wss:// protocols are allowed.
+ */
+function validateUrl(url: string): { valid: boolean; error?: string } {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "ws:" && parsed.protocol !== "wss:") {
+      return { valid: false, error: `Invalid protocol '${parsed.protocol}'. Only ws:// and wss:// are supported.` };
+    }
+    if (!parsed.hostname) {
+      return { valid: false, error: "URL must include a hostname." };
+    }
+    return { valid: true };
+  } catch {
+    return { valid: false, error: `Invalid URL format: ${url}` };
+  }
+}
+
+/**
  * Configuration for LM Studio connection.
  * Lazily evaluated from environment variables.
+ * Throws if the URL is malformed.
  */
 function getConfig(): { baseUrl: string } {
-  return {
-    baseUrl: process.env.LMSTUDIO_BASE_URL || `ws://${process.env.LMSTUDIO_HOST || "127.0.0.1"}:${process.env.LMSTUDIO_PORT || "1234"}`,
-  };
+  const baseUrl = process.env.LMSTUDIO_BASE_URL || `ws://${process.env.LMSTUDIO_HOST || "127.0.0.1"}:${process.env.LMSTUDIO_PORT || "1234"}`;
+
+  const validation = validateUrl(baseUrl);
+  if (!validation.valid) {
+    throw new Error(`Invalid LM Studio URL configuration: ${validation.error}`);
+  }
+
+  return { baseUrl };
 }
 
 // Singleton instance of the client

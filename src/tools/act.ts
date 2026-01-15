@@ -2,6 +2,24 @@ import { getClient } from "../client.js";
 import { z } from "zod";
 import { ToolResult, successResult, errorResult, ErrorCode, mapErrorCode } from "../types.js";
 
+// Default timeout for model responses (60 seconds)
+const DEFAULT_TIMEOUT_MS = 60000;
+
+/**
+ * Wrap a promise with a timeout.
+ * Rejects if the promise doesn't resolve within the specified time.
+ */
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Model response timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    }),
+  ]);
+}
+
 // Tool schema definition (matches MCP tool format)
 const toolSchemaZ = z.object({
   name: z.string(),
@@ -29,6 +47,7 @@ export const inputSchema = z.object({
   toolResults: z.array(toolResultZ).optional().describe("Results from previously requested tool calls"),
   history: z.array(messageZ).optional().describe("Conversation history for multi-turn interactions"),
   maxTokens: z.number().int().min(1).optional().describe("Maximum tokens to generate"),
+  timeoutMs: z.number().int().min(1000).max(300000).optional().describe("Timeout in milliseconds for model response (default: 60000, max: 300000)"),
 });
 
 export type ActInput = z.infer<typeof inputSchema>;
@@ -161,10 +180,14 @@ export async function act(input: ActInput): Promise<ToolResult<ActData>> {
       history.push({ role: "user", content: input.task });
     }
 
-    // Get response from model
-    const result = await handle.respond(history, {
-      maxTokens: input.maxTokens || 2048,
-    });
+    // Get response from model with timeout
+    const timeoutMs = input.timeoutMs || DEFAULT_TIMEOUT_MS;
+    const result = await withTimeout(
+      handle.respond(history, {
+        maxTokens: input.maxTokens || 2048,
+      }),
+      timeoutMs
+    );
 
     const responseText = result.content.trim();
 
