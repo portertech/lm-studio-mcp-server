@@ -12,13 +12,13 @@ import {
   healthCheck,
   act,
   getSessionTool,
-  endSession,
+  deleteSessionTool,
   loadModelInputSchema,
   unloadModelInputSchema,
   getModelInfoInputSchema,
   actInputSchema,
   getSessionInputSchema,
-  endSessionInputSchema,
+  deleteSessionInputSchema,
 } from "./tools/index.js";
 import { ToolResult, errorResult, ErrorCode } from "./types.js";
 
@@ -113,23 +113,23 @@ async function main(): Promise<void> {
     }
   );
 
-  // Register get_session tool - session introspection
+  // Register get_session tool - read session response/history
   server.tool(
     "lmstudio_get_session",
-    "Get information about an active agentic session (message count, TTL remaining, etc.)",
+    "Read the response from a completed agentic session. Use this to fetch the full response text only when needed, reducing token usage.",
     getSessionInputSchema.shape,
     async (params) => {
       return safeToolHandler(() => validateAndCall(getSessionInputSchema, params, getSessionTool));
     }
   );
 
-  // Register end_session tool - explicit session cleanup
+  // Register delete_session tool - explicit session cleanup
   server.tool(
-    "lmstudio_end_session",
-    "End an active agentic session and free its resources",
-    endSessionInputSchema.shape,
+    "lmstudio_delete_session",
+    "Delete an agentic session and free its resources",
+    deleteSessionInputSchema.shape,
     async (params) => {
-      return safeToolHandler(() => validateAndCall(endSessionInputSchema, params, endSession));
+      return safeToolHandler(() => validateAndCall(deleteSessionInputSchema, params, deleteSessionTool));
     }
   );
 

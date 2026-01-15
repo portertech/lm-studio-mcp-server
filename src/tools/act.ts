@@ -47,12 +47,19 @@ export interface ToolCallRequest {
   arguments?: Record<string, unknown>;
 }
 
+// Response stats for tracking without full content
+export interface ResponseStats {
+  messageCount: number;
+  responseLength: number;
+}
+
 // Output data
 export interface ActData {
   sessionId: string;
   done: boolean;
   response?: string;
   toolCalls?: ToolCallRequest[];
+  stats?: ResponseStats;
 }
 
 /**
@@ -219,16 +226,21 @@ export async function act(input: ActInput): Promise<ToolResult<ActData>> {
         sessionId: session.id,
         done: false,
         toolCalls,
+        stats: {
+          messageCount: session.messages.length,
+          responseLength: responseText.length,
+        },
       });
     }
 
-    // No tool calls - task complete, clean up session
-    deleteSession(session.id);
-
+    // No tool calls - task complete (session kept for parent to read if needed)
     return successResult("Task completed", {
       sessionId: session.id,
       done: true,
-      response: responseText,
+      stats: {
+        messageCount: session.messages.length,
+        responseLength: responseText.length,
+      },
     });
   } catch (error) {
     // Clean up session on error if it was newly created

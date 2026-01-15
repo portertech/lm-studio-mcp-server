@@ -21,7 +21,7 @@ describe("act tool", () => {
   });
 
   describe("new session", () => {
-    it("returns completed response with sessionId when model responds without tool calls", async () => {
+    it("returns completed status with sessionId when model responds without tool calls", async () => {
       const mockHandle = {
         getModelInfo: vi.fn().mockResolvedValue({
           identifier: "test-model",
@@ -47,7 +47,8 @@ describe("act tool", () => {
       expect(result.success).toBe(true);
       expect(result.data?.done).toBe(true);
       expect(result.data?.sessionId).toBeDefined();
-      expect(result.data?.response).toBe("Hello! I can help you with that.");
+      expect(result.data?.response).toBeUndefined(); // Response omitted for token efficiency
+      expect(result.data?.stats?.responseLength).toBe(32);
       expect(result.data?.toolCalls).toBeUndefined();
     });
 
@@ -148,7 +149,7 @@ describe("act tool", () => {
       expect(result2.success).toBe(true);
       expect(result2.data?.done).toBe(true);
       expect(result2.data?.sessionId).toBe(sessionId);
-      expect(result2.data?.response).toBe("The weather in London is sunny.");
+      expect(result2.data?.response).toBeUndefined(); // Response omitted, use getSession to read
     });
 
     it("returns error when session not found", async () => {
@@ -250,6 +251,129 @@ describe("act tool", () => {
       expect(result.success).toBe(true);
       expect(result.data?.done).toBe(true);
       expect(result.data?.toolCalls).toBeUndefined();
+    });
+  });
+
+  describe("response options", () => {
+    it("includes stats in completed response", async () => {
+      const mockHandle = {
+        getModelInfo: vi.fn().mockResolvedValue({
+          identifier: "test-model",
+          modelKey: "llama-3.2-3b",
+        }),
+        respond: vi.fn().mockResolvedValue({
+          content: "Hello! I can help you with that.",
+        }),
+      };
+
+      const mockClient = {
+        llm: {
+          createDynamicHandle: vi.fn().mockReturnValue(mockHandle),
+        },
+      };
+      vi.mocked(getClient).mockReturnValue(mockClient as never);
+
+      const result = await act({
+        identifier: "test-model",
+        task: "Say hello",
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data?.stats).toBeDefined();
+      expect(result.data?.stats?.messageCount).toBeGreaterThan(0);
+      expect(result.data?.stats?.responseLength).toBe(32);
+    });
+
+    it("includes stats in tool call response", async () => {
+      const mockHandle = {
+        getModelInfo: vi.fn().mockResolvedValue({
+          identifier: "test-model",
+          modelKey: "llama-3.2-3b",
+        }),
+        respond: vi.fn().mockResolvedValue({
+          content: '{"tool_calls": [{"name": "get_weather", "arguments": {"city": "London"}}]}',
+        }),
+      };
+
+      const mockClient = {
+        llm: {
+          createDynamicHandle: vi.fn().mockReturnValue(mockHandle),
+        },
+      };
+      vi.mocked(getClient).mockReturnValue(mockClient as never);
+
+      const result = await act({
+        identifier: "test-model",
+        task: "What's the weather?",
+        tools: [{ name: "get_weather" }],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data?.done).toBe(false);
+      expect(result.data?.stats).toBeDefined();
+      expect(result.data?.stats?.messageCount).toBeGreaterThan(0);
+    });
+
+    it("omits response by default for token efficiency", async () => {
+      const mockHandle = {
+        getModelInfo: vi.fn().mockResolvedValue({
+          identifier: "test-model",
+          modelKey: "llama-3.2-3b",
+        }),
+        respond: vi.fn().mockResolvedValue({
+          content: "This is a response that parent can fetch via getSession.",
+        }),
+      };
+
+      const mockClient = {
+        llm: {
+          createDynamicHandle: vi.fn().mockReturnValue(mockHandle),
+        },
+      };
+      vi.mocked(getClient).mockReturnValue(mockClient as never);
+
+      const result = await act({
+        identifier: "test-model",
+        task: "Do something",
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data?.done).toBe(true);
+      expect(result.data?.response).toBeUndefined();
+      expect(result.data?.stats?.responseLength).toBe(56);
+    });
+
+    it("keeps session alive after completion for parent to read", async () => {
+      const mockHandle = {
+        getModelInfo: vi.fn().mockResolvedValue({
+          identifier: "test-model",
+          modelKey: "llama-3.2-3b",
+        }),
+        respond: vi.fn().mockResolvedValue({
+          content: "Task complete.",
+        }),
+      };
+
+      const mockClient = {
+        llm: {
+          createDynamicHandle: vi.fn().mockReturnValue(mockHandle),
+        },
+      };
+      vi.mocked(getClient).mockReturnValue(mockClient as never);
+
+      const result = await act({
+        identifier: "test-model",
+        task: "Do something",
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data?.done).toBe(true);
+
+      // Session should still exist
+      const { getSession } = await import("../src/sessions.js");
+      const session = getSession(result.data!.sessionId);
+      expect(session).toBeDefined();
+      expect(session?.messages.some((m) => m.content === "Task complete.")).toBe(true);
     });
   });
 

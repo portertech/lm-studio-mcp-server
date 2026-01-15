@@ -25,6 +25,7 @@ TypeScript MCP (Model Context Protocol) server that enables AI assistants to con
 src/
 ├── index.ts              # MCP server entry point, tool registration
 ├── client.ts             # LM Studio SDK client wrapper (singleton)
+├── sessions.ts           # Server-side session management
 ├── types.ts              # Shared types, result helpers, error codes
 └── tools/
     ├── index.ts          # Barrel exports for all tools
@@ -34,7 +35,9 @@ src/
     ├── load-model.ts
     ├── unload-model.ts
     ├── get-model-info.ts
-    └── act.ts            # Agentic task execution with tool use
+    ├── act.ts            # Agentic task execution with tool use
+    ├── get-session.ts    # Read session response/history
+    └── delete-session.ts # Explicit session cleanup
 
 test/
 ├── schemas.test.ts       # Input schema validation tests
