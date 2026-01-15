@@ -82,14 +82,10 @@ Do not explain that you're going to use a tool - just output the JSON or your fi
 }
 
 /**
- * Format tool results as a message
+ * Format tool results as a compact message
  */
 function formatToolResults(toolResults: Array<{ name: string; result: string }>): string {
-  const resultsText = toolResults
-    .map((r) => `Tool "${r.name}" returned: ${r.result}`)
-    .join("\n\n");
-
-  return `Here are the results from the tool calls:\n\n${resultsText}\n\nPlease continue with your task based on these results.`;
+  return toolResults.map((r) => `[${r.name}]: ${r.result}`).join("\n");
 }
 
 /**
