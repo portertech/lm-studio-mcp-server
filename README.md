@@ -129,15 +129,18 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "lmstudio": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "lm-studio-mcp-server"],
-      "env": {
-        "LMSTUDIO_HOST": "host.docker.internal",
-        "LMSTUDIO_PORT": "1234"
-      }
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "LMSTUDIO_HOST=127.0.0.1",
+        "-e", "LMSTUDIO_PORT=1234",
+        "lm-studio-mcp-server"
+      ]
     }
   }
 }
 ```
+
+> **Note:** For Docker on macOS/Windows connecting to LM Studio on the host machine, use `LMSTUDIO_HOST=host.docker.internal`.
 
 ## Available Tools
 
