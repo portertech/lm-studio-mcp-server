@@ -25,7 +25,7 @@
   ],
   "author": "Sean Porter",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "engines": {
     "node": ">=18.0.0"
   },

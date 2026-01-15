@@ -1,6 +1,6 @@
-import { getClient } from "../client";
+import { getClient } from "../client.js";
 import { z } from "zod";
-import { ToolResult, successResult, errorResult, mapErrorCode } from "../types";
+import { ToolResult, successResult, errorResult, mapErrorCode } from "../types.js";
 
 // Input schema for the list loaded models tool (no inputs required)
 export const inputSchema = z.object({});

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { loadModelInputSchema, unloadModelInputSchema, getModelInfoInputSchema } from "../src/tools";
+import { loadModelInputSchema, unloadModelInputSchema, getModelInfoInputSchema } from "../src/tools/index.js";
 
 describe("input schemas", () => {
   describe("loadModelInputSchema", () => {

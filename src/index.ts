@@ -1,5 +1,5 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 // Import tool handlers and schemas
 import {
@@ -12,8 +12,8 @@ import {
   loadModelInputSchema,
   unloadModelInputSchema,
   getModelInfoInputSchema,
-} from "./tools";
-import { ToolResult, errorResult, ErrorCode } from "./types";
+} from "./tools/index.js";
+import { ToolResult, errorResult, ErrorCode } from "./types.js";
 
 // Server configuration
 const SERVER_CONFIG = {

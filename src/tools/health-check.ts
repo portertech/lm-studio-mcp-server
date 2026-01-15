@@ -1,6 +1,6 @@
-import { testConnection } from "../client";
+import { testConnection } from "../client.js";
 import { z } from "zod";
-import { ToolResult, successResult, errorResult, ErrorCode } from "../types";
+import { ToolResult, successResult, errorResult, ErrorCode } from "../types.js";
 
 // Input schema for the health check tool (no inputs required)
 export const inputSchema = z.object({});

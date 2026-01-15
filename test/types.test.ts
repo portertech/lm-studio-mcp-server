@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { successResult, errorResult, mapErrorCode, ErrorCode } from "../src/types";
+import { successResult, errorResult, mapErrorCode, ErrorCode } from "../src/types.js";
 
 describe("types", () => {
   describe("successResult", () => {

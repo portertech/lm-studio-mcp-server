@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock the client module
-vi.mock("../src/client", () => ({
+vi.mock("../src/client.js", () => ({
   getClient: vi.fn(),
 }));
 
-import { getClient } from "../src/client";
-import { listModels } from "../src/tools/list-models";
-import { listLoadedModels } from "../src/tools/list-loaded-models";
-import { loadModel } from "../src/tools/load-model";
-import { unloadModel } from "../src/tools/unload-model";
-import { getModelInfo } from "../src/tools/get-model-info";
-import { ErrorCode } from "../src/types";
+import { getClient } from "../src/client.js";
+import { listModels } from "../src/tools/list-models.js";
+import { listLoadedModels } from "../src/tools/list-loaded-models.js";
+import { loadModel } from "../src/tools/load-model.js";
+import { unloadModel } from "../src/tools/unload-model.js";
+import { getModelInfo } from "../src/tools/get-model-info.js";
+import { ErrorCode } from "../src/types.js";
 
 describe("tool handlers", () => {
   beforeEach(() => {
