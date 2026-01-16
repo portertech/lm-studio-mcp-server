@@ -85,7 +85,7 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "lmstudio": {
       "command": "npx",
-      "args": ["lm-studio-mcp-server"],
+      "args": ["@portertech/lm-studio-mcp-server"],
       "env": {
         "LMSTUDIO_HOST": "127.0.0.1",
         "LMSTUDIO_PORT": "1234"
