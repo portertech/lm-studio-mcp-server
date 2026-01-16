@@ -1,6 +1,17 @@
 import { LMStudioClient } from "@lmstudio/sdk";
 
 /**
+ * Silent logger to prevent SDK output from corrupting MCP's stdio protocol.
+ * MCP uses stdout for JSON-RPC, so any console.log from the SDK breaks parsing.
+ */
+const silentLogger = {
+  info: () => {},
+  error: () => {},
+  warn: () => {},
+  debug: () => {},
+};
+
+/**
  * Validate that a URL is properly formatted for LM Studio connection.
  * Only ws:// and wss:// protocols are allowed.
  */
@@ -48,6 +59,7 @@ export function getClient(): LMStudioClient {
     const config = getConfig();
     globalClient = new LMStudioClient({
       baseUrl: config.baseUrl,
+      logger: silentLogger,
     });
   }
 
