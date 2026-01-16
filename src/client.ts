@@ -1,4 +1,4 @@
-import { LMStudioClient } from "@lmstudio/sdk";
+import { LMStudioClient, type LoggerInterface } from "@lmstudio/sdk";
 import { withTimeout, DEFAULT_TIMEOUT } from "./types.js";
 
 /**
@@ -10,6 +10,14 @@ function getConfig(): { baseUrl: string } {
     baseUrl: process.env.LMSTUDIO_BASE_URL || `ws://${process.env.LMSTUDIO_HOST || "127.0.0.1"}:${process.env.LMSTUDIO_PORT || "1234"}`,
   };
 }
+
+// Route SDK logs to stderr so MCP stdout remains protocol-safe.
+const sdkLogger: LoggerInterface = {
+  info: (...messages) => console.error(...messages),
+  warn: (...messages) => console.error(...messages),
+  error: (...messages) => console.error(...messages),
+  debug: () => {},
+};
 
 // Singleton instance of the client
 let globalClient: LMStudioClient | null = null;
@@ -24,6 +32,7 @@ export function getClient(): LMStudioClient {
     const config = getConfig();
     globalClient = new LMStudioClient({
       baseUrl: config.baseUrl,
+      logger: sdkLogger,
     });
   }
 
