@@ -23,7 +23,11 @@ export async function unloadModel(input: UnloadModelInput): Promise<ToolResult<v
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
     if (code === ErrorCode.MODEL_NOT_LOADED) {
-      return errorResult(`Model '${input.identifier}' is not currently loaded`, ErrorCode.MODEL_NOT_LOADED, errorMessage);
+      return errorResult(
+        `Model '${input.identifier}' is not currently loaded`,
+        ErrorCode.MODEL_NOT_LOADED,
+        errorMessage,
+      );
     }
 
     const finalCode = code === ErrorCode.UNKNOWN ? ErrorCode.UNLOAD_FAILED : code;

@@ -29,7 +29,11 @@ export async function getModelInfo(input: GetModelInfoInput): Promise<ToolResult
     const modelInfo = await withTimeout(handle.getModelInfo(), undefined, "Get model info");
 
     if (!modelInfo) {
-      return errorResult(`Model '${input.identifier}' not found or not loaded`, ErrorCode.MODEL_NOT_LOADED, "Model not loaded");
+      return errorResult(
+        `Model '${input.identifier}' not found or not loaded`,
+        ErrorCode.MODEL_NOT_LOADED,
+        "Model not loaded",
+      );
     }
 
     return successResult(`Retrieved information for model '${input.identifier}'`, {

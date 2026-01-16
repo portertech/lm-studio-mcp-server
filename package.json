@@ -15,7 +15,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [
     "mcp",
@@ -41,9 +45,14 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.0",
     "@types/node": "^25.0.9",
+    "eslint": "^9.39.0",
+    "eslint-config-prettier": "^10.0.0",
+    "prettier": "^3.5.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.24.0",
     "vitest": "^4.0.17"
   }
 }

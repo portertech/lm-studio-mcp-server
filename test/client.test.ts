@@ -12,7 +12,6 @@ vi.mock("@lmstudio/sdk", () => ({
   },
 }));
 
-import { LMStudioClient } from "@lmstudio/sdk";
 import { getClient, resetClient, testConnection } from "../src/client.js";
 
 describe("client", () => {
@@ -34,9 +33,7 @@ describe("client", () => {
       const client = getClient();
 
       expect(client).toBeDefined();
-      expect((client as unknown as { config: { baseUrl: string } }).config.baseUrl).toBe(
-        "ws://127.0.0.1:1234"
-      );
+      expect((client as unknown as { config: { baseUrl: string } }).config.baseUrl).toBe("ws://127.0.0.1:1234");
     });
 
     it("uses LMSTUDIO_BASE_URL when set", () => {
@@ -44,9 +41,7 @@ describe("client", () => {
 
       const client = getClient();
 
-      expect((client as unknown as { config: { baseUrl: string } }).config.baseUrl).toBe(
-        "ws://custom:5678"
-      );
+      expect((client as unknown as { config: { baseUrl: string } }).config.baseUrl).toBe("ws://custom:5678");
     });
 
     it("constructs URL from HOST and PORT", () => {
@@ -55,9 +50,7 @@ describe("client", () => {
 
       const client = getClient();
 
-      expect((client as unknown as { config: { baseUrl: string } }).config.baseUrl).toBe(
-        "ws://192.168.1.100:9999"
-      );
+      expect((client as unknown as { config: { baseUrl: string } }).config.baseUrl).toBe("ws://192.168.1.100:9999");
     });
 
     it("returns singleton instance", () => {

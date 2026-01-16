@@ -64,6 +64,6 @@ export async function loadModel(input: LoadModelInput): Promise<ToolResult<Loade
       });
     },
     `Failed to load model '${input.model}'`,
-    ErrorCode.LOAD_FAILED
+    ErrorCode.LOAD_FAILED,
   );
 }

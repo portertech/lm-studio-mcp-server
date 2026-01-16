@@ -26,5 +26,9 @@ export async function healthCheck(_input: HealthCheckInput = {}): Promise<ToolRe
     });
   }
 
-  return errorResult(`Failed to connect to LM Studio at ${result.baseUrl}`, ErrorCode.CONNECTION_FAILED, result.error || "Connection failed");
+  return errorResult(
+    `Failed to connect to LM Studio at ${result.baseUrl}`,
+    ErrorCode.CONNECTION_FAILED,
+    result.error || "Connection failed",
+  );
 }

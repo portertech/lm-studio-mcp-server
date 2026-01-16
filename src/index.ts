@@ -26,7 +26,9 @@ const SERVER_CONFIG = {
  * Safe wrapper that catches any thrown errors and returns a consistent error payload.
  * This ensures tool handlers never bubble exceptions to the MCP layer.
  */
-async function safeToolHandler<T>(handler: () => Promise<ToolResult<T>>): Promise<{ content: Array<{ type: "text"; text: string }> }> {
+async function safeToolHandler<T>(
+  handler: () => Promise<ToolResult<T>>,
+): Promise<{ content: Array<{ type: "text"; text: string }> }> {
   try {
     const result = await handler();
     return {
@@ -56,7 +58,7 @@ interface ToolDefinition<TSchema extends z.ZodObject<z.ZodRawShape>, TResult> {
  */
 function registerTool<TSchema extends z.ZodObject<z.ZodRawShape>, TResult>(
   server: McpServer,
-  tool: ToolDefinition<TSchema, TResult>
+  tool: ToolDefinition<TSchema, TResult>,
 ): void {
   server.tool(tool.name, tool.description, tool.schema.shape, async (params) => {
     return safeToolHandler(() => tool.handler(params as z.infer<TSchema>));

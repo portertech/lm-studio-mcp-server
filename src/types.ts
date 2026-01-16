@@ -46,7 +46,11 @@ export function successResult<T>(message: string, data?: T): ToolResult<T> {
 /**
  * Helper to create an error result.
  */
-export function errorResult(message: string, code: ErrorCode = ErrorCode.UNKNOWN, errorMessage?: string): ToolResult<never> {
+export function errorResult(
+  message: string,
+  code: ErrorCode = ErrorCode.UNKNOWN,
+  errorMessage?: string,
+): ToolResult<never> {
   return {
     success: false,
     message,
@@ -83,7 +87,7 @@ export function mapErrorCode(error: unknown): ErrorCode {
 export async function withErrorHandling<T>(
   operation: () => Promise<ToolResult<T>>,
   errorMessagePrefix: string,
-  fallbackErrorCode: ErrorCode = ErrorCode.UNKNOWN
+  fallbackErrorCode: ErrorCode = ErrorCode.UNKNOWN,
 ): Promise<ToolResult<T>> {
   try {
     return await operation();
@@ -107,7 +111,11 @@ export const DEFAULT_TIMEOUT = 30;
  * @param timeoutSeconds - Timeout in seconds (default: 30)
  * @param operationName - Name for error message
  */
-export function withTimeout<T>(promise: Promise<T>, timeoutSeconds: number = DEFAULT_TIMEOUT, operationName = "Operation"): Promise<T> {
+export function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutSeconds: number = DEFAULT_TIMEOUT,
+  operationName = "Operation",
+): Promise<T> {
   return new Promise((resolve, reject) => {
     const timeoutId = setTimeout(() => {
       reject(new Error(`${operationName} timed out after ${timeoutSeconds}s`));

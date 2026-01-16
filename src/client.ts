@@ -7,7 +7,9 @@ import { withTimeout, DEFAULT_TIMEOUT } from "./types.js";
  */
 function getConfig(): { baseUrl: string } {
   return {
-    baseUrl: process.env.LMSTUDIO_BASE_URL || `ws://${process.env.LMSTUDIO_HOST || "127.0.0.1"}:${process.env.LMSTUDIO_PORT || "1234"}`,
+    baseUrl:
+      process.env.LMSTUDIO_BASE_URL ||
+      `ws://${process.env.LMSTUDIO_HOST || "127.0.0.1"}:${process.env.LMSTUDIO_PORT || "1234"}`,
   };
 }
 

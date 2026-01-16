@@ -31,17 +31,18 @@ npm install
 
 The server connects to LM Studio using environment variables:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LMSTUDIO_BASE_URL` | `ws://127.0.0.1:1234` | Full WebSocket URL for LM Studio |
-| `LMSTUDIO_HOST` | `127.0.0.1` | LM Studio host (used if BASE_URL not set) |
-| `LMSTUDIO_PORT` | `1234` | LM Studio port (used if BASE_URL not set) |
+| Variable            | Default               | Description                               |
+| ------------------- | --------------------- | ----------------------------------------- |
+| `LMSTUDIO_BASE_URL` | `ws://127.0.0.1:1234` | Full WebSocket URL for LM Studio          |
+| `LMSTUDIO_HOST`     | `127.0.0.1`           | LM Studio host (used if BASE_URL not set) |
+| `LMSTUDIO_PORT`     | `1234`                | LM Studio port (used if BASE_URL not set) |
 
 ## Usage
 
 ### Running Modes
 
 **Development** (uses `tsx` for TypeScript execution):
+
 ```bash
 npm start
 # or with file watching
@@ -49,12 +50,14 @@ npm run dev
 ```
 
 **Production** (uses compiled JavaScript):
+
 ```bash
 npm run build
 npm run start:prod
 ```
 
 **Docker**:
+
 ```bash
 # Build the image
 docker build -t lm-studio-mcp-server .
@@ -76,6 +79,7 @@ docker run -i --rm \
 Add to your `claude_desktop_config.json`:
 
 **Using npx (recommended for installed packages):**
+
 ```json
 {
   "mcpServers": {
@@ -92,6 +96,7 @@ Add to your `claude_desktop_config.json`:
 ```
 
 **Using local development:**
+
 ```json
 {
   "mcpServers": {
@@ -108,6 +113,7 @@ Add to your `claude_desktop_config.json`:
 ```
 
 **Using production build:**
+
 ```json
 {
   "mcpServers": {
@@ -124,17 +130,13 @@ Add to your `claude_desktop_config.json`:
 ```
 
 **Using Docker:**
+
 ```json
 {
   "mcpServers": {
     "lmstudio": {
       "command": "docker",
-      "args": [
-        "run", "-i", "--rm",
-        "-e", "LMSTUDIO_HOST=127.0.0.1",
-        "-e", "LMSTUDIO_PORT=1234",
-        "lm-studio-mcp-server"
-      ]
+      "args": ["run", "-i", "--rm", "-e", "LMSTUDIO_HOST=127.0.0.1", "-e", "LMSTUDIO_PORT=1234", "lm-studio-mcp-server"]
     }
   }
 }
@@ -145,6 +147,7 @@ Add to your `claude_desktop_config.json`:
 ## Available Tools
 
 All tools return a consistent response envelope:
+
 ```typescript
 {
   success: boolean;
@@ -159,15 +162,15 @@ All tools return a consistent response envelope:
 
 ### Error Codes
 
-| Code | Description |
-|------|-------------|
-| `MODEL_NOT_FOUND` | Requested model does not exist |
-| `MODEL_NOT_LOADED` | Model is not currently loaded |
-| `CONNECTION_FAILED` | Cannot connect to LM Studio |
-| `INVALID_INPUT` | Invalid parameters provided |
-| `LOAD_FAILED` | Failed to load model |
-| `UNLOAD_FAILED` | Failed to unload model |
-| `UNKNOWN` | Unexpected error |
+| Code                | Description                    |
+| ------------------- | ------------------------------ |
+| `MODEL_NOT_FOUND`   | Requested model does not exist |
+| `MODEL_NOT_LOADED`  | Model is not currently loaded  |
+| `CONNECTION_FAILED` | Cannot connect to LM Studio    |
+| `INVALID_INPUT`     | Invalid parameters provided    |
+| `LOAD_FAILED`       | Failed to load model           |
+| `UNLOAD_FAILED`     | Failed to unload model         |
+| `UNKNOWN`           | Unexpected error               |
 
 ### `lmstudio_health_check`
 
@@ -184,6 +187,7 @@ List all downloaded LLM models available in LM Studio.
 **Parameters**: None
 
 **Returns**: Array of model info objects with:
+
 - `modelKey`: Model identifier for loading
 - `path`: Relative path to the model
 - `displayName`: Human-readable model name
@@ -198,6 +202,7 @@ List all currently loaded models in memory.
 **Parameters**: None
 
 **Returns**: Array of loaded model info with:
+
 - `identifier`: Instance identifier
 - `modelKey`: Model key
 - `path`: Model path
@@ -211,6 +216,7 @@ List all currently loaded models in memory.
 Load a model into memory.
 
 **Parameters**:
+
 - `model` (required): Model key to load (e.g., `llama-3.2-3b-instruct`)
 - `identifier` (optional): Custom identifier for the loaded instance
 - `contextLength` (optional): Context window size in tokens (minimum: 1)
@@ -223,6 +229,7 @@ Load a model into memory.
 Unload a model from memory.
 
 **Parameters**:
+
 - `identifier` (required): Identifier of the loaded model to unload
 
 **Returns**: Success status
@@ -232,6 +239,7 @@ Unload a model from memory.
 Get detailed information about a loaded model.
 
 **Parameters**:
+
 - `identifier` (required): Identifier of the loaded model
 
 **Returns**: Model details including identifier, modelKey, path, displayName, sizeBytes, contextLength
@@ -246,7 +254,17 @@ npm run build
 npm run dev
 
 # Type check without emitting
+npm run typecheck
+
+# Run tests
 npm test
+
+# Lint
+npm run lint
+
+# Format
+npm run format:check
+npm run format
 ```
 
 ### Project Structure
