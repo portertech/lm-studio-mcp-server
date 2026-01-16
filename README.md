@@ -13,6 +13,18 @@ An MCP (Model Context Protocol) server that provides AI assistants with control 
 - **Agentic Tasks**: Run tasks with local models that can request tool calls
 - **Session Management**: Server-side conversation state for reduced token usage
 
+## Cost-Optimized Agentic Workflow
+
+This MCP server enables a powerful workflow that combines frontier model intelligence with local model execution to dramatically reduce API costs:
+
+### The Pattern
+
+1. **Plan with a Frontier Model**: Use a capable cloud model (Opus 4.5, GPT-5.2, etc.) to analyze the task, break it down into steps, and create a detailed execution plan.
+
+2. **Orchestrate with a Cheaper Cloud Model**: Hand off to a less expensive cloud model (Haiku, GPT-4o-mini, etc.) with strong tool-calling capabilities. This model will orchestrate the local execution and perform tool calls for the LM Studio models.
+
+3. **Execute with Local Models**: The cheaper cloud model delegates work to local LM Studio models via `lmstudio_act`.
+
 ## Prerequisites
 
 - Node.js 18.0.0 or higher
