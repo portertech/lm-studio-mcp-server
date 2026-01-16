@@ -1,4 +1,5 @@
 import { LMStudioClient } from "@lmstudio/sdk";
+import { withTimeout, DEFAULT_TIMEOUT } from "./types.js";
 
 /**
  * Configuration for LM Studio connection.
@@ -30,7 +31,7 @@ export function getClient(): LMStudioClient {
 }
 
 /**
- * Reset the client instance. Useful for testing or reconnection.
+ * Reset the client instance. Useful for testing or reconnection after failure.
  */
 export function resetClient(): void {
   if (globalClient) {
@@ -50,17 +51,20 @@ export interface HealthCheckResult {
 /**
  * Test the connection to LM Studio.
  * Returns detailed health check result.
+ * Resets the client on connection failure to allow reconnection on next attempt.
  */
-export async function testConnection(): Promise<HealthCheckResult> {
+export async function testConnection(timeoutSeconds: number = DEFAULT_TIMEOUT): Promise<HealthCheckResult> {
   const config = getConfig();
   try {
     const client = getClient();
-    await client.llm.listLoaded();
+    await withTimeout(client.llm.listLoaded(), timeoutSeconds, "Health check");
     return {
       connected: true,
       baseUrl: config.baseUrl,
     };
   } catch (error) {
+    // Reset client on failure to allow fresh connection on retry
+    resetClient();
     return {
       connected: false,
       baseUrl: config.baseUrl,

@@ -1,6 +1,6 @@
 import { getClient } from "../client.js";
 import { z } from "zod";
-import { ToolResult, successResult, errorResult, ErrorCode, mapErrorCode } from "../types.js";
+import { ToolResult, successResult, errorResult, ErrorCode, mapErrorCode, withTimeout } from "../types.js";
 
 // Input schema for the unload model tool
 export const inputSchema = z.object({
@@ -13,18 +13,15 @@ export type UnloadModelInput = z.infer<typeof inputSchema>;
  * Unload a specific model instance from memory in LM Studio.
  */
 export async function unloadModel(input: UnloadModelInput): Promise<ToolResult<void>> {
+  // Special handling needed for MODEL_NOT_LOADED to customize error message
   try {
     const client = getClient();
-
-    // Unload the model directly using the identifier
-    await client.llm.unload(input.identifier);
-
+    await withTimeout(client.llm.unload(input.identifier), undefined, "Unload model");
     return successResult(`Model '${input.identifier}' unloaded successfully`);
   } catch (error) {
     const code = mapErrorCode(error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-    // Map to specific codes
     if (code === ErrorCode.MODEL_NOT_LOADED) {
       return errorResult(`Model '${input.identifier}' is not currently loaded`, ErrorCode.MODEL_NOT_LOADED, errorMessage);
     }

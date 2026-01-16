@@ -1,6 +1,6 @@
 import { getClient } from "../client.js";
 import { z } from "zod";
-import { ToolResult, successResult, errorResult, mapErrorCode } from "../types.js";
+import { ToolResult, successResult, withErrorHandling, withTimeout } from "../types.js";
 
 // Input schema for the list loaded models tool (no inputs required)
 export const inputSchema = z.object({});
@@ -22,11 +22,9 @@ export interface LoadedModelInfo {
  * Get currently loaded/active LLM models in LM Studio.
  */
 export async function listLoadedModels(_input: ListLoadedModelsInput = {}): Promise<ToolResult<LoadedModelInfo[]>> {
-  try {
+  return withErrorHandling(async () => {
     const client = getClient();
-
-    // Get the list of loaded LLM models
-    const loadedModels = await client.llm.listLoaded();
+    const loadedModels = await withTimeout(client.llm.listLoaded(), undefined, "List loaded models");
 
     const models = loadedModels.map((model) => ({
       identifier: model.identifier,
@@ -39,9 +37,5 @@ export async function listLoadedModels(_input: ListLoadedModelsInput = {}): Prom
     }));
 
     return successResult(`Found ${models.length} loaded model(s)`, models);
-  } catch (error) {
-    const code = mapErrorCode(error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return errorResult("Failed to list loaded models", code, errorMessage);
-  }
+  }, "Failed to list loaded models");
 }

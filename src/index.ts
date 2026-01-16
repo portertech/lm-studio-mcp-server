@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
 
 // Import tool handlers and schemas
 import {
@@ -41,6 +42,31 @@ async function safeToolHandler<T>(handler: () => Promise<ToolResult<T>>): Promis
 }
 
 /**
+ * Tool definition for registration.
+ */
+interface ToolDefinition<TSchema extends z.ZodObject<z.ZodRawShape>, TResult> {
+  name: string;
+  description: string;
+  schema: TSchema;
+  handler: (params: z.infer<TSchema>) => Promise<ToolResult<TResult>>;
+}
+
+/**
+ * Register a tool with the MCP server.
+ */
+function registerTool<TSchema extends z.ZodObject<z.ZodRawShape>, TResult>(
+  server: McpServer,
+  tool: ToolDefinition<TSchema, TResult>
+): void {
+  server.tool(tool.name, tool.description, tool.schema.shape, async (params) => {
+    return safeToolHandler(() => tool.handler(params as z.infer<TSchema>));
+  });
+}
+
+// Empty schema for tools with no parameters
+const emptySchema = z.object({});
+
+/**
  * Create and start the MCP server for LM Studio model management.
  */
 async function main(): Promise<void> {
@@ -49,34 +75,47 @@ async function main(): Promise<void> {
     version: SERVER_CONFIG.version,
   });
 
-  // Register health_check tool
-  server.tool("lmstudio_health_check", "Check connectivity to LM Studio server", {}, async () => {
-    return safeToolHandler(() => healthCheck({}));
+  // Register tools using the helper
+  registerTool(server, {
+    name: "lmstudio_health_check",
+    description: "Check connectivity to LM Studio server",
+    schema: emptySchema,
+    handler: healthCheck,
   });
 
-  // Register list_models tool
-  server.tool("lmstudio_list_models", "List all downloaded LLM models available in LM Studio", {}, async () => {
-    return safeToolHandler(() => listModels({}));
+  registerTool(server, {
+    name: "lmstudio_list_models",
+    description: "List all downloaded LLM models available in LM Studio",
+    schema: emptySchema,
+    handler: listModels,
   });
 
-  // Register list_loaded_models tool
-  server.tool("lmstudio_list_loaded_models", "List all currently loaded LLM models in LM Studio", {}, async () => {
-    return safeToolHandler(() => listLoadedModels({}));
+  registerTool(server, {
+    name: "lmstudio_list_loaded_models",
+    description: "List all currently loaded LLM models in LM Studio",
+    schema: emptySchema,
+    handler: listLoadedModels,
   });
 
-  // Register load_model tool - use schema from tool file
-  server.tool("lmstudio_load_model", "Load a model into memory in LM Studio", loadModelInputSchema.shape, async (params) => {
-    return safeToolHandler(() => loadModel(params as Parameters<typeof loadModel>[0]));
+  registerTool(server, {
+    name: "lmstudio_load_model",
+    description: "Load a model into memory in LM Studio",
+    schema: loadModelInputSchema,
+    handler: loadModel,
   });
 
-  // Register unload_model tool - use schema from tool file
-  server.tool("lmstudio_unload_model", "Unload a model from memory in LM Studio", unloadModelInputSchema.shape, async (params) => {
-    return safeToolHandler(() => unloadModel(params as Parameters<typeof unloadModel>[0]));
+  registerTool(server, {
+    name: "lmstudio_unload_model",
+    description: "Unload a model from memory in LM Studio",
+    schema: unloadModelInputSchema,
+    handler: unloadModel,
   });
 
-  // Register get_model_info tool - use schema from tool file
-  server.tool("lmstudio_get_model_info", "Get detailed information about a specific loaded model in LM Studio", getModelInfoInputSchema.shape, async (params) => {
-    return safeToolHandler(() => getModelInfo(params as Parameters<typeof getModelInfo>[0]));
+  registerTool(server, {
+    name: "lmstudio_get_model_info",
+    description: "Get detailed information about a specific loaded model in LM Studio",
+    schema: getModelInfoInputSchema,
+    handler: getModelInfo,
   });
 
   // Connect to stdio transport

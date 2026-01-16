@@ -6,13 +6,10 @@ export { unloadModel } from "./unload-model.js";
 export { getModelInfo } from "./get-model-info.js";
 export { healthCheck } from "./health-check.js";
 
-// Export input schemas
-export { inputSchema as listModelsInputSchema } from "./list-models.js";
-export { inputSchema as listLoadedModelsInputSchema } from "./list-loaded-models.js";
+// Export input schemas (only those with parameters)
 export { inputSchema as loadModelInputSchema } from "./load-model.js";
 export { inputSchema as unloadModelInputSchema } from "./unload-model.js";
 export { inputSchema as getModelInfoInputSchema } from "./get-model-info.js";
-export { inputSchema as healthCheckInputSchema } from "./health-check.js";
 
 // Export types
 export type { DownloadedModelInfo } from "./list-models.js";

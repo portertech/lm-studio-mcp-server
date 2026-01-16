@@ -1,6 +1,6 @@
 import { getClient } from "../client.js";
 import { z } from "zod";
-import { ToolResult, successResult, errorResult, ErrorCode, mapErrorCode } from "../types.js";
+import { ToolResult, successResult, errorResult, ErrorCode, withErrorHandling, withTimeout } from "../types.js";
 
 // Input schema for the get model info tool
 export const inputSchema = z.object({
@@ -23,14 +23,10 @@ export interface ModelInfoData {
  * Get detailed information about a specific loaded model instance.
  */
 export async function getModelInfo(input: GetModelInfoInput): Promise<ToolResult<ModelInfoData>> {
-  try {
+  return withErrorHandling(async () => {
     const client = getClient();
-
-    // Create a dynamic handle for the model by identifier
     const handle = client.llm.createDynamicHandle({ identifier: input.identifier });
-
-    // Get model info - returns undefined if model is not loaded
-    const modelInfo = await handle.getModelInfo();
+    const modelInfo = await withTimeout(handle.getModelInfo(), undefined, "Get model info");
 
     if (!modelInfo) {
       return errorResult(`Model '${input.identifier}' not found or not loaded`, ErrorCode.MODEL_NOT_LOADED, "Model not loaded");
@@ -44,9 +40,5 @@ export async function getModelInfo(input: GetModelInfoInput): Promise<ToolResult
       sizeBytes: modelInfo.sizeBytes,
       contextLength: modelInfo.contextLength,
     });
-  } catch (error) {
-    const code = mapErrorCode(error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return errorResult(`Failed to get information for model '${input.identifier}'`, code, errorMessage);
-  }
+  }, `Failed to get information for model '${input.identifier}'`);
 }

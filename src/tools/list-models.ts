@@ -1,6 +1,6 @@
 import { getClient } from "../client.js";
 import { z } from "zod";
-import { ToolResult, successResult, errorResult, ErrorCode, mapErrorCode } from "../types.js";
+import { ToolResult, successResult, withErrorHandling, withTimeout } from "../types.js";
 
 // Input schema for the list models tool (no inputs required)
 export const inputSchema = z.object({});
@@ -22,11 +22,9 @@ export interface DownloadedModelInfo {
  * Uses the system.listDownloadedModels() API to get models from the LM Studio library.
  */
 export async function listModels(_input: ListModelsInput = {}): Promise<ToolResult<DownloadedModelInfo[]>> {
-  try {
+  return withErrorHandling(async () => {
     const client = getClient();
-
-    // Use the system namespace to list downloaded LLM models
-    const downloadedModels = await client.system.listDownloadedModels("llm");
+    const downloadedModels = await withTimeout(client.system.listDownloadedModels("llm"), undefined, "List models");
 
     const models = downloadedModels.map((model) => ({
       modelKey: model.modelKey,
@@ -38,9 +36,5 @@ export async function listModels(_input: ListModelsInput = {}): Promise<ToolResu
     }));
 
     return successResult(`Found ${models.length} downloaded model(s)`, models);
-  } catch (error) {
-    const code = mapErrorCode(error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return errorResult("Failed to list models", code, errorMessage);
-  }
+  }, "Failed to list models");
 }
