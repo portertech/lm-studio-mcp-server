@@ -79,42 +79,42 @@ async function main(): Promise<void> {
 
   // Register tools using the helper
   registerTool(server, {
-    name: "lmstudio_health_check",
+    name: "health_check",
     description: "Check connectivity to LM Studio server",
     schema: emptySchema,
     handler: healthCheck,
   });
 
   registerTool(server, {
-    name: "lmstudio_list_models",
+    name: "list_models",
     description: "List all downloaded LLM models available in LM Studio",
     schema: emptySchema,
     handler: listModels,
   });
 
   registerTool(server, {
-    name: "lmstudio_list_loaded_models",
+    name: "list_loaded_models",
     description: "List all currently loaded LLM models in LM Studio",
     schema: emptySchema,
     handler: listLoadedModels,
   });
 
   registerTool(server, {
-    name: "lmstudio_load_model",
+    name: "load_model",
     description: "Load a model into memory in LM Studio",
     schema: loadModelInputSchema,
     handler: loadModel,
   });
 
   registerTool(server, {
-    name: "lmstudio_unload_model",
+    name: "unload_model",
     description: "Unload a model from memory in LM Studio",
     schema: unloadModelInputSchema,
     handler: unloadModel,
   });
 
   registerTool(server, {
-    name: "lmstudio_get_model_info",
+    name: "get_model_info",
     description: "Get detailed information about a specific loaded model in LM Studio",
     schema: getModelInfoInputSchema,
     handler: getModelInfo,

@@ -181,7 +181,7 @@ All tools return a consistent response envelope:
 | `UNLOAD_FAILED`     | Failed to unload model         |
 | `UNKNOWN`           | Unexpected error               |
 
-### `lmstudio_health_check`
+### `health_check`
 
 Check connectivity to LM Studio server.
 
@@ -189,7 +189,7 @@ Check connectivity to LM Studio server.
 
 **Returns**: Connection status and base URL
 
-### `lmstudio_list_models`
+### `list_models`
 
 List all downloaded LLM models available in LM Studio.
 
@@ -204,7 +204,7 @@ List all downloaded LLM models available in LM Studio.
 - `architecture`: Model architecture (if available)
 - `quantization`: Quantization type (if available)
 
-### `lmstudio_list_loaded_models`
+### `list_loaded_models`
 
 List all currently loaded models in memory.
 
@@ -220,7 +220,7 @@ List all currently loaded models in memory.
 - `vision`: Whether model supports vision
 - `trainedForToolUse`: Whether model was trained for tool use
 
-### `lmstudio_load_model`
+### `load_model`
 
 Load a model into memory.
 
@@ -233,7 +233,7 @@ Load a model into memory.
 
 **Returns**: Success status with loaded model details (identifier, modelKey, path)
 
-### `lmstudio_unload_model`
+### `unload_model`
 
 Unload a model from memory.
 
@@ -243,7 +243,7 @@ Unload a model from memory.
 
 **Returns**: Success status
 
-### `lmstudio_get_model_info`
+### `get_model_info`
 
 Get detailed information about a loaded model.
 
