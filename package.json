@@ -1,6 +1,6 @@
 {
   "name": "@portertech/lm-studio-mcp-server",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "MCP server for LM Studio model management",
   "main": "dist/index.js",
   "bin": {
