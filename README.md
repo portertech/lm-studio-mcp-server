@@ -33,7 +33,7 @@ The server connects to LM Studio using environment variables:
 
 | Variable            | Default               | Description                               |
 | ------------------- | --------------------- | ----------------------------------------- |
-| `LMSTUDIO_BASE_URL` | `ws://127.0.0.1:1234` | Full WebSocket URL for LM Studio          |
+| `LMSTUDIO_BASE_URL` | (derived)             | Full WebSocket URL for LM Studio          |
 | `LMSTUDIO_HOST`     | `127.0.0.1`           | LM Studio host (used if BASE_URL not set) |
 | `LMSTUDIO_PORT`     | `1234`                | LM Studio port (used if BASE_URL not set) |
 
@@ -74,7 +74,7 @@ docker run -i --rm \
 
 ### MCP Client Configuration
 
-#### Claude Desktop
+#### Claude
 
 Add to your `claude_desktop_config.json`:
 
@@ -103,23 +103,6 @@ Add to your `claude_desktop_config.json`:
     "lmstudio": {
       "command": "npx",
       "args": ["tsx", "/path/to/lm-studio-mcp-server/src/index.ts"],
-      "env": {
-        "LMSTUDIO_HOST": "127.0.0.1",
-        "LMSTUDIO_PORT": "1234"
-      }
-    }
-  }
-}
-```
-
-**Using production build:**
-
-```json
-{
-  "mcpServers": {
-    "lmstudio": {
-      "command": "node",
-      "args": ["/path/to/lm-studio-mcp-server/dist/index.js"],
       "env": {
         "LMSTUDIO_HOST": "127.0.0.1",
         "LMSTUDIO_PORT": "1234"
@@ -275,6 +258,26 @@ npm run lint
 npm run format:check
 npm run format
 ```
+
+### Release Process
+
+The project includes a `make release` command for automated releases:
+
+```bash
+# Create a new release (runs CI, sets version, commits, tags, publishes to npm and Docker Hub)
+make release VERSION=<version>
+
+# Example:
+make release VERSION=1.0.5
+```
+
+This runs the full release pipeline:
+1. CI checks (lint, typecheck, test)
+2. Sets version in `package.json`
+3. Commits the version bump
+4. Creates an annotated git tag (`v<version>`)
+5. Publishes to npm
+6. Builds and pushes Docker images to Docker Hub
 
 ### Project Structure
 
