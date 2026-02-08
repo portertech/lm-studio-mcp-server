@@ -1,4 +1,4 @@
-.PHONY: build test test-v test-cover lint fmt fmt-check typecheck clean npm-publish docker docker-release docker-buildx-setup docker-login docker-push docker-publish ci release version
+.PHONY: build test test-v test-cover lint fmt fmt-check typecheck clean npm-publish docker docker-release docker-buildx-setup docker-login docker-push docker-publish ci release version set-version commit-version tag-version
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 
@@ -43,10 +43,8 @@ typecheck:
 clean:
 	rm -rf dist
 
-# Publish to npm
+# Publish to npm (version must be set before calling this)
 npm-publish: build
-	@echo "Setting version to $(VERSION)..."
-	npm pkg set version=$(VERSION)
 	echo "Publishing to npm..."
 	npm publish --access public
 
@@ -86,5 +84,18 @@ version:
 # Run all checks (used in CI)
 ci: lint typecheck test
 
-# Full release: ci -> npm-publish -> docker-publish
-release: ci npm-publish docker-publish
+# Set version in package.json
+set-version:
+	npm pkg set version=$(VERSION)
+
+# Commit the version bump
+commit-version: set-version
+	git add package.json
+	git commit -m "v$(VERSION)"
+
+# Create annotated git tag
+tag-version: commit-version
+	git tag -a "v$(VERSION)" -m "v$(VERSION)"
+
+# Full release: ci -> set-version -> commit-version -> tag-version -> npm-publish -> docker-publish
+release: ci set-version commit-version tag-version npm-publish docker-publish
